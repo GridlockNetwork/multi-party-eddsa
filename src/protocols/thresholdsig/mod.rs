@@ -28,6 +28,7 @@ use curv::BigInt;
 const SECURITY: usize = 256;
 
 // u_i is private key and {u__i, prefix} are extended private key.
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Keys {
     pub u_i: FE,
     pub y_i: GE,
