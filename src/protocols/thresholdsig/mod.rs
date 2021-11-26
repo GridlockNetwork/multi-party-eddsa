@@ -46,13 +46,14 @@ pub struct Parameters {
     pub threshold: usize,   //t
     pub share_count: usize, //n
 }
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SharedKeys {
     pub y: GE,
     pub x_i: FE,
     prefix: FE,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct EphemeralKey {
     pub r_i: FE,
     pub R_i: GE,
@@ -65,6 +66,7 @@ pub struct EphemeralSharedKeys {
     pub r_i: FE,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct LocalSig {
     gamma_i: FE,
     k: FE,
@@ -202,14 +204,12 @@ impl EphemeralKey {
     // Nevertheless our ephemeral key will still be deterministic as a sum of deterministic ephemeral keys:
 
     pub fn ephermeral_key_create_from_deterministic_secret(
-        keys: &Keys,
         message: &[u8],
         index: usize,
     ) -> EphemeralKey {
         // here we deviate from the spec, by introducing  non-deterministic element (random number)
         // to the nonce
         let r_local = HSha512::create_hash(&[
-            &keys.prefix.to_big_int(),
             &BigInt::from_bytes(message),
             &FE::new_random().to_big_int(),
         ]);
