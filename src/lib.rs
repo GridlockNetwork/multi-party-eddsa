@@ -15,6 +15,8 @@
 */
 
 extern crate curv;
+extern crate curve25519_dalek;
+extern crate sha2;
 
 extern crate hex;
 #[macro_use]

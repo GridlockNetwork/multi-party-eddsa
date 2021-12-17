@@ -22,12 +22,18 @@ use curv::cryptographic_primitives::commitments::traits::Commitment;
 use curv::cryptographic_primitives::hashing::hash_sha512::HSha512;
 use curv::cryptographic_primitives::hashing::traits::*;
 use curv::cryptographic_primitives::secret_sharing::feldman_vss::VerifiableSS;
-use curv::elliptic::curves::ed25519::{FE, GE};
+use curv::elliptic::curves::ed25519::{FE, GE, SK};
 use curv::BigInt;
+
+use curve25519_dalek::scalar::Scalar;
+use curve25519_dalek::digest::Digest;
+
+use sha2::Sha512;
 
 const SECURITY: usize = 256;
 
 // u_i is private key and {u__i, prefix} are extended private key.
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Keys {
     pub u_i: FE,
     pub y_i: GE,
@@ -35,6 +41,7 @@ pub struct Keys {
     pub party_index: usize,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct KeyGenBroadcastMessage1 {
     com: BigInt,
 }
@@ -44,13 +51,14 @@ pub struct Parameters {
     pub threshold: usize,   //t
     pub share_count: usize, //n
 }
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SharedKeys {
     pub y: GE,
     pub x_i: FE,
     prefix: FE,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct EphemeralKey {
     pub r_i: FE,
     pub R_i: GE,
@@ -63,6 +71,7 @@ pub struct EphemeralSharedKeys {
     pub r_i: FE,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct LocalSig {
     gamma_i: FE,
     k: FE,
@@ -200,14 +209,12 @@ impl EphemeralKey {
     // Nevertheless our ephemeral key will still be deterministic as a sum of deterministic ephemeral keys:
 
     pub fn ephermeral_key_create_from_deterministic_secret(
-        keys: &Keys,
         message: &[u8],
         index: usize,
     ) -> EphemeralKey {
         // here we deviate from the spec, by introducing  non-deterministic element (random number)
         // to the nonce
         let r_local = HSha512::create_hash(&[
-            &keys.prefix.to_big_int(),
             &BigInt::from_bytes(message),
             &FE::new_random().to_big_int(),
         ]);
@@ -313,13 +320,17 @@ impl LocalSig {
     ) -> LocalSig {
         let r_i = local_ephemaral_key.r_i.clone();
         let s_i = local_private_key.x_i.clone();
+        
+        let mut h = Sha512::new();
+        h.update(local_ephemaral_key.R.get_element().to_bytes());
+        h.update(local_private_key.y.get_element().to_bytes());
+        h.update(&message);
 
-        let e_bn = HSha512::create_hash(&[
-            &local_ephemaral_key.R.bytes_compressed_to_big_int(),
-            &local_private_key.y.bytes_compressed_to_big_int(),
-            &BigInt::from_bytes(message),
-        ]);
-        let k: FE = ECScalar::from(&e_bn);
+        let k_scalar = Scalar::from_hash::<Sha512>(h);
+        let fe = SK::from_bytes(&k_scalar.to_bytes());
+        let mut k = FE::new_random();
+        k.set_element(fe);
+
         let gamma_i = r_i + k * s_i;
 
         LocalSig { gamma_i, k }
@@ -398,13 +409,16 @@ impl Signature {
     }
 
     pub fn verify(&self, message: &[u8], pubkey_y: &GE) -> Result<(), Error> {
-        let e_bn = HSha512::create_hash(&[
-            &self.R.bytes_compressed_to_big_int(),
-            &pubkey_y.bytes_compressed_to_big_int(),
-            &BigInt::from_bytes(message),
-        ]);
+        let mut h = Sha512::new();
+        h.update(&self.R.get_element().to_bytes());
+        h.update(&pubkey_y.get_element().to_bytes());
+        h.update(message);
 
-        let e: FE = ECScalar::from(&e_bn);
+        let e_scalar = Scalar::from_hash::<Sha512>(h);
+        
+        let fe = SK::from_bytes(&e_scalar.to_bytes());
+        let mut e = FE::new_random();
+        e.set_element(fe);
 
         let g: GE = GE::generator();
         let sigma_g = g * &self.sigma;
