@@ -125,6 +125,7 @@ mod tests {
         let signature =
             Signature::generate(&vss_sum_local_sigs, &local_sig_vec, &parties_index_vec, R);
         let verify_sig = signature.verify(&message, &Y);
+
         assert!(verify_sig.is_ok());
     }
 
@@ -219,8 +220,7 @@ mod tests {
         let eph_party_keys_vec = (0..n.clone())
             .map(|i| {
                 EphemeralKey::ephermeral_key_create_from_deterministic_secret(
-                    &keys_vec[i],
-                    message,
+                   message,
                     parties[i],
                 )
             })
