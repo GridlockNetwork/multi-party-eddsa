@@ -55,7 +55,7 @@ pub struct Parameters {
 pub struct SharedKeys {
     pub y: GE,
     pub x_i: FE,
-    prefix: FE,
+    pub prefix: FE,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
