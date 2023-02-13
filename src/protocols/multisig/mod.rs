@@ -28,13 +28,13 @@ use protocols::multisig;
 use sha2::{digest::Digest, Sha512};
 
 // I is a private key and public key keypair, X is a commitment of the form X = xG used only in key generation (see p11 in the paper)
-#[derive(Debug, Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Keys {
     pub I: ExpandedKeyPair,
     pub X: SingleKeyPair,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct SingleKeyPair {
     pub public_key: Point<Ed25519>,
     private_key: Scalar<Ed25519>,
