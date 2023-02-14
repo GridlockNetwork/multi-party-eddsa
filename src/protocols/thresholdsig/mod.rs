@@ -47,7 +47,7 @@ pub struct Parameters {
 pub struct SharedKeys {
     pub y: Point<Ed25519>,
     pub x_i: Scalar<Ed25519>,
-    prefix: Scalar<Ed25519>,
+    pub prefix: Scalar<Ed25519>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
