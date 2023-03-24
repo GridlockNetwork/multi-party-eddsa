@@ -1,6 +1,6 @@
 [package]
 name = "multi-party-eddsa"
-version = "0.3.0"
+version = "0.3.1000"
 authors = [
     "Omer <omer@kzencorp.com>",
     "Gary <gary@kzencorp.com>"
